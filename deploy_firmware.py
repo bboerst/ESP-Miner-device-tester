@@ -18,7 +18,15 @@ def update_device(ip_address, firmware_path, www_path):
     try:
         # Upload www partition first
         with open(www_path, 'rb') as f:
-            headers = {'Content-Type': 'application/octet-stream'}
+            headers = {
+                'User-Agent': 'Mozilla/5.0',
+                'Accept': 'application/json, text/plain, */*',
+                'Accept-Language': 'en-US,en;q=0.5',
+                'Content-Type': 'application/octet-stream',
+                'Origin': f'http://{ip_address}',
+                'Referer': f'http://{ip_address}/',
+                'Connection': 'keep-alive'
+            }
             response = requests.post(
                 f'http://{ip_address}/api/system/WWW',
                 data=f.read(),
@@ -30,7 +38,15 @@ def update_device(ip_address, firmware_path, www_path):
 
         # Upload main firmware
         with open(firmware_path, 'rb') as f:
-            headers = {'Content-Type': 'application/octet-stream'}
+            headers = {
+                'User-Agent': 'Mozilla/5.0',
+                'Accept': 'application/json, text/plain, */*',
+                'Accept-Language': 'en-US,en;q=0.5',
+                'Content-Type': 'application/octet-stream',
+                'Origin': f'http://{ip_address}',
+                'Referer': f'http://{ip_address}/',
+                'Connection': 'keep-alive'
+            }
             response = requests.post(
                 f'http://{ip_address}/api/system/OTA',
                 data=f.read(),
@@ -45,7 +61,7 @@ def update_device(ip_address, firmware_path, www_path):
         print(f"Reboot triggered for {ip_address}")
         
         # Wait for device to come back online
-        time.sleep(15)  # Initial wait
+        time.sleep(10)  # Initial wait
         
         for _ in range(5):  # Check a few times
             if check_device_online(ip_address):

@@ -72,7 +72,6 @@ jobs:
     - name: Install Python dependencies
       if: github.event_name != 'schedule' || steps.check_upstream.outputs.new_commit == 'true'
       run: |
-        pip install esptool
         pip install requests
 
     - name: Deploy firmware to devices

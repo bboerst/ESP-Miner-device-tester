@@ -44,10 +44,7 @@ jobs:
         esp_idf_version: v5.3.1
         target: esp32s3
         command: |
-          GITHUB_ACTIONS="true" idf.py build \
-          --no-ccache-warn \
-          --no-warnings \
-          --build-dir build
+          GITHUB_ACTIONS="true" idf.py build
         path: './ESP-miner'
 
     - uses: actions/setup-python@v5

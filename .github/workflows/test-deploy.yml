@@ -1,0 +1,75 @@
+name: Test Deploy to Bitaxe Devices
+
+on:
+  push:
+    branches:
+      - master
+  schedule:
+    - cron: '0 */4 * * *'  # Check every 4 hours
+  workflow_dispatch:  # Allow manual triggering
+
+jobs:
+  test-deploy:
+    runs-on: [self-hosted, Linux, X64, ESP-Miner-device-tester-repo]
+    
+    steps:
+    - name: Checkout test runner repo
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0  # Needed for comparing with upstream
+
+    - name: Checkout ESP-miner repo
+      uses: actions/checkout@v4
+      with:
+        repository: 'skot/ESP-miner'
+        path: 'ESP-miner'
+        submodules: 'recursive'
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '22'
+        cache: 'npm'
+        cache-dependency-path: './ESP-miner/main/http_server/axe-os/package-lock.json'
+
+    - name: Build web dist
+      working-directory: ./ESP-miner/main/http_server/axe-os
+      run: |
+        npm ci --prefer-offline
+        npm run build --max-old-space-size=4096
+
+    - name: esp-idf build
+      uses: espressif/esp-idf-ci-action@v1
+      with:
+        esp_idf_version: v5.3.1
+        target: esp32s3
+        command: |
+          GITHUB_ACTIONS="true" idf.py build \
+          --no-ccache-warn \
+          --no-warnings \
+          --build-dir build
+        path: './ESP-miner'
+
+    - uses: actions/setup-python@v5
+      with:
+        python-version: '3.10'
+        cache: 'pip'
+
+    - name: Install Python dependencies
+      run: |
+        pip install esptool
+        pip install requests
+
+
+    - name: Deploy firmware to devices
+      env:
+        BITAXE_DEVICES: ${{ secrets.BITAXE_TEST_DEVICES }}
+      run: |
+        python3 deploy_firmware.py "$BITAXE_DEVICES"
+
+    - name: Check upstream changes
+      if: github.event_name == 'schedule'
+      run: |
+        git remote add upstream https://github.com/skot/ESP-miner.git
+        git fetch upstream
+        python3 check_upstream.py

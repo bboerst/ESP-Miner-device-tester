@@ -30,6 +30,14 @@ jobs:
           echo "new_commit=false" >> $GITHUB_OUTPUT
         fi
 
+    - name: Checkout ESP-miner repo
+      if: github.event_name != 'schedule' || steps.check_upstream.outputs.new_commit == 'true'
+      uses: actions/checkout@v4
+      with:
+        repository: skot/ESP-miner
+        path: ESP-miner
+        fetch-depth: 1
+
     - name: Setup Node.js
       if: github.event_name != 'schedule' || steps.check_upstream.outputs.new_commit == 'true'
       uses: actions/setup-node@v4

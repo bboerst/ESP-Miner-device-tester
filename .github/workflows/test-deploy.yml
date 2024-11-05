@@ -18,6 +18,14 @@ jobs:
       with:
         fetch-depth: 0  # Needed for comparing with upstream
 
+    - name: Download last commit marker
+      if: github.event_name == 'schedule'
+      continue-on-error: true
+      uses: actions/download-artifact@v4
+      with:
+        name: last-commit-marker
+        path: .
+
     - name: Check upstream changes
       id: check_upstream
       if: github.event_name == 'schedule'
@@ -29,6 +37,14 @@ jobs:
         else
           echo "new_commit=false" >> $GITHUB_OUTPUT
         fi
+
+    - name: Upload last commit marker
+      if: github.event_name == 'schedule'
+      uses: actions/upload-artifact@v4
+      with:
+        name: last-commit-marker
+        path: .last_upstream_commit
+        retention-days: 7
 
     - name: Checkout ESP-miner repo
       if: github.event_name == 'push' || github.event_name == 'workflow_dispatch' || steps.check_upstream.outputs.new_commit == 'true'

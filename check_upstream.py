@@ -1,8 +1,16 @@
 #!/usr/bin/env python3
 import os
 import sys
+import logging
 import requests
 from datetime import datetime, timezone, timedelta
+
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
 
 def get_latest_commit():
     """Get the latest commit from skot/ESP-miner master branch"""
@@ -18,6 +26,9 @@ def main():
         with open(marker_file) as f:
             last_commit = f.read().strip()
     except FileNotFoundError:
+        # If no marker file exists, we'll treat this as a new commit scenario
+        # to ensure first run always updates
+        logger.info("No marker file found - treating as new commit")
         last_commit = ''
 
     # Get the latest commit from upstream

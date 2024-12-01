@@ -46,8 +46,18 @@ jobs:
         path: .last_upstream_commit
         retention-days: 7
 
+    # Exit early if no changes detected during scheduled run
+    - name: Exit if no changes
+      if: github.event_name == 'schedule' && steps.check_upstream.outputs.new_commit == 'false'
+      run: |
+        echo "No changes detected in upstream repository. Skipping deployment."
+        exit 0
+
+    # All subsequent steps will only run if:
+    # 1. It's a push to master
+    # 2. It's manually triggered
+    # 3. It's a scheduled run AND there are new commits
     - name: Checkout ESP-miner repo
-      if: github.event_name == 'push' || github.event_name == 'workflow_dispatch' || steps.check_upstream.outputs.new_commit == 'true'
       uses: actions/checkout@v4
       with:
         repository: skot/ESP-miner
@@ -55,7 +65,6 @@ jobs:
         fetch-depth: 1
 
     - name: Setup Node.js
-      if: github.event_name == 'push' || github.event_name == 'workflow_dispatch' || steps.check_upstream.outputs.new_commit == 'true'
       uses: actions/setup-node@v4
       with:
         node-version: '22'
@@ -63,14 +72,12 @@ jobs:
         cache-dependency-path: './ESP-miner/main/http_server/axe-os/package-lock.json'
 
     - name: Build web dist
-      if: github.event_name == 'push' || github.event_name == 'workflow_dispatch' || steps.check_upstream.outputs.new_commit == 'true'
       working-directory: ./ESP-miner/main/http_server/axe-os
       run: |
         npm ci --prefer-offline
         npm run build --max-old-space-size=4096
 
     - name: esp-idf build
-      if: github.event_name == 'push' || github.event_name == 'workflow_dispatch' || steps.check_upstream.outputs.new_commit == 'true'
       uses: espressif/esp-idf-ci-action@v1
       with:
         esp_idf_version: v5.3.1
@@ -80,18 +87,15 @@ jobs:
         path: './ESP-miner'
 
     - uses: actions/setup-python@v5
-      if: github.event_name == 'push' || github.event_name == 'workflow_dispatch' || steps.check_upstream.outputs.new_commit == 'true'
       with:
         python-version: '3.10'
         cache: 'pip'
 
     - name: Install Python dependencies
-      if: github.event_name == 'push' || github.event_name == 'workflow_dispatch' || steps.check_upstream.outputs.new_commit == 'true'
       run: |
         pip install requests
 
     - name: Deploy firmware to devices
-      if: github.event_name == 'push' || github.event_name == 'workflow_dispatch' || steps.check_upstream.outputs.new_commit == 'true'
       env:
         BITAXE_DEVICES: ${{ secrets.BITAXE_TEST_DEVICES }}
       run: |
